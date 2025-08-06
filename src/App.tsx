@@ -6,6 +6,7 @@ import { motion } from 'framer-motion';
 // Import components
 import Header from './components/Header';
 import Footer from './components/Footer';
+import ConfigWarning from './components/ConfigWarning';
 import Home from './pages/Home';
 import BookAppointment from './pages/BookAppointment';
 import AdminLogin from './pages/AdminLogin';
@@ -13,6 +14,7 @@ import AdminDashboard from './pages/AdminDashboard';
 import MyAppointments from './pages/MyAppointments';
 import { AuthProvider } from './contexts/AuthContext';
 import { AppointmentProvider } from './contexts/AppointmentContext';
+import { isSupabaseConfigured } from './lib/supabase';
 
 function App() {
   return (
@@ -36,6 +38,8 @@ function App() {
             />
             
             <Header />
+            
+            {!isSupabaseConfigured && <ConfigWarning />}
             
             <motion.main 
               className="flex-1"

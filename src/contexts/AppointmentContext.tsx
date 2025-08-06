@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { format, isAfter, startOfDay } from 'date-fns';
-import { supabase } from '../lib/supabase';
+import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import toast from 'react-hot-toast';
 
 export interface Appointment {
@@ -53,6 +53,39 @@ export const AppointmentProvider: React.FC<{ children: React.ReactNode }> = ({ c
   const loadAppointments = async () => {
     try {
       setIsLoading(true);
+      
+      // If Supabase is not configured, use demo data
+      if (!isSupabaseConfigured) {
+        const demoAppointments: Appointment[] = [
+          {
+            id: 'demo-1',
+            customerName: 'John Doe',
+            customerEmail: 'john@example.com',
+            customerPhone: '+1234567890',
+            date: new Date('2024-01-15'),
+            time: '10:00',
+            service: 'Consultation',
+            message: 'Demo appointment',
+            status: 'confirmed',
+            createdAt: new Date('2024-01-10'),
+          },
+          {
+            id: 'demo-2',
+            customerName: 'Jane Smith',
+            customerEmail: 'jane@example.com',
+            customerPhone: '+1234567891',
+            date: new Date('2024-01-16'),
+            time: '14:00',
+            service: 'Follow-up',
+            message: 'Demo follow-up',
+            status: 'pending',
+            createdAt: new Date('2024-01-11'),
+          }
+        ];
+        setAppointments(demoAppointments);
+        return;
+      }
+
       const { data, error } = await supabase
         .from('appointments')
         .select('*')
@@ -84,6 +117,18 @@ export const AppointmentProvider: React.FC<{ children: React.ReactNode }> = ({ c
 
   const loadBusinessSettings = async () => {
     try {
+      // If Supabase is not configured, use default settings
+      if (!isSupabaseConfigured) {
+        setBusinessHours({
+          start: '09:00',
+          end: '17:00',
+          breakStart: '12:00',
+          breakEnd: '13:00',
+        });
+        setOffDays(['0', '6']); // Sunday and Saturday
+        return;
+      }
+
       const { data, error } = await supabase
         .from('business_settings')
         .select('*')
@@ -113,6 +158,27 @@ export const AppointmentProvider: React.FC<{ children: React.ReactNode }> = ({ c
   const addAppointment = async (appointmentData: Omit<Appointment, 'id' | 'createdAt'>) => {
     try {
       setIsLoading(true);
+      
+      // If Supabase is not configured, add to local state only
+      if (!isSupabaseConfigured) {
+        const newAppointment: Appointment = {
+          id: `demo-${Date.now()}`,
+          customerName: appointmentData.customerName,
+          customerEmail: appointmentData.customerEmail,
+          customerPhone: appointmentData.customerPhone,
+          date: appointmentData.date,
+          time: appointmentData.time,
+          service: appointmentData.service,
+          message: appointmentData.message,
+          status: appointmentData.status,
+          createdAt: new Date(),
+        };
+
+        setAppointments(prev => [...prev, newAppointment]);
+        toast.success('Appointment booked successfully! (Demo mode)');
+        return;
+      }
+
       const { data, error } = await supabase
         .from('appointments')
         .insert({

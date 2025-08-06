@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { supabase } from '../lib/supabase';
+import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import toast from 'react-hot-toast';
 
 interface User {
@@ -23,6 +23,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
+    // If Supabase is not configured, skip auth checks
+    if (!isSupabaseConfigured) {
+      setIsLoading(false);
+      return;
+    }
+
     // Check for existing auth session
     const checkAuth = async () => {
       try {
@@ -71,6 +77,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setIsLoading(true);
     
     try {
+      // If Supabase is not configured, only allow demo login
+      if (!isSupabaseConfigured) {
+        if (email === 'admin@example.com' && password === 'admin123') {
+          const demoUser: User = {
+            id: 'demo-admin',
+            email: 'admin@example.com',
+            name: 'Demo Admin',
+            role: 'admin'
+          };
+          setUser(demoUser);
+          localStorage.setItem('demoAuth', JSON.stringify(demoUser));
+          toast.success('Demo login successful!');
+          return true;
+        } else {
+          toast.error('Invalid credentials. Use admin@example.com / admin123 for demo.');
+          return false;
+        }
+      }
+
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
@@ -115,6 +140,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // Handle demo logout
       if (user?.id === 'demo-admin') {
         localStorage.removeItem('demoAuth');
+        setUser(null);
+        toast.success('Logged out successfully');
+        return;
+      }
+
+      // If Supabase is not configured, just clear user state
+      if (!isSupabaseConfigured) {
         setUser(null);
         toast.success('Logged out successfully');
         return;
